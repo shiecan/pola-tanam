@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Pola Tanam</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <p class="eyebrow">Dashboard</p>
+        <h1>Pola Tanam</h1>
+        <p>Ringkasan aktivitas, distribusi bibit, dan performa panen.</p>
+      </div>
+      <nav class="nav">
+        <a class="link ghost" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="link" href="{{ url_for('index') }}">Input Data</a>
+        <a class="link" href="{{ url_for('list_pola') }}">List Petani</a>
+      </nav>
+    </header>
+
+    <section class="grid dashboard-top">
+      <article class="card activity-card">
+        <h2>Ringkasan Aktivitas</h2>
+        <div class="activity-grid">
+          <div class="activity-pill">
+            <span>🌾 Total Panen</span>
+            <strong>{{ total_panen }}</strong>
+          </div>
+          <div class="activity-pill">
+            <span>📦 Distribusi Bibit</span>
+            <strong>{{ total_distribusi }}</strong>
+          </div>
+          <div class="activity-pill">
+            <span>🧭 Semua Kegiatan</span>
+            <strong>{{ total_aktivitas }}</strong>
+          </div>
+          <div class="activity-pill">
+            <span>👥 Mitra Pola Tanam</span>
+            <strong>{{ total_mitra }}</strong>
+          </div>
+        </div>
+      </article>
+      <article class="card filter-card">
+        <h2>Filter Dashboard</h2>
+        <form class="filter" method="get" action="{{ url_for('dashboard') }}">
+          <label>
+            Periode
+            <select name="period" id="period-select">
+              <option value="" {% if not period %}selected{% endif %}>Semua</option>
+              <option value="week" {% if period == 'week' %}selected{% endif %}>Minggu</option>
+              <option value="month" {% if period == 'month' %}selected{% endif %}>Bulan</option>
+              <option value="year" {% if period == 'year' %}selected{% endif %}>Tahun</option>
+            </select>
+          </label>
+          <label class="period-field period-week">
+            Minggu
+            <select name="week_value">
+              <option value="">Pilih minggu</option>
+              {% for w in weeks %}
+              <option value="{{ w }}" {% if value == w %}selected{% endif %}>{{ w }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="period-field period-month">
+            Bulan
+            <select name="month_value">
+              <option value="">Pilih bulan</option>
+              {% for m in months %}
+              <option value="{{ m }}" {% if value == m %}selected{% endif %}>{{ m }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="period-field period-year">
+            Tahun
+            <select name="year_value">
+              <option value="">Pilih tahun</option>
+              {% for y in years %}
+              <option value="{{ y }}" {% if value == y %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="filter-actions">
+            <button type="submit">Terapkan</button>
+            <a class="ghost link" href="{{ url_for('dashboard') }}">Reset</a>
+          </div>
+        </form>
+      </article>
+    </section>
+
+    <section class="grid card-grid-wrap">
+
+      <article class="card card-highlight">
+        <div class="card-title">
+          <h2>Kode Bibit Terpakai</h2>
+        </div>
+        <div class="grid-cards">
+          {% for row in kode_bibit_rows %}
+          {% set pemberian = (row.total_pemberian or 0) | float %}
+          {% set tanam = (row.total_tanam or 0) | float %}
+          {% set percent_bibit = 0 %}
+          {% if pemberian > 0 %}
+            {% set percent_bibit = (tanam / pemberian) * 100 %}
+            {% if percent_bibit > 100 %}{% set percent_bibit = 100 %}{% endif %}
+          {% endif %}
+          {% set selisih = (pemberian - tanam) %}
+          <div class="grid-card">
+            <div class="grid-card-header">
+              <strong>{{ row.kode_bibit }}</strong>
+              <span class="muted">{{ row.komoditas }}</span>
+            </div>
+            <div class="grid-card-body">
+              <div><span>📦 Pemberian</span><strong>{{ "%.2f"|format(pemberian) }} kg</strong></div>
+              <div><span>🌱 Tanam</span><strong>{{ "%.2f"|format(tanam) }} kg</strong></div>
+              <div><span>⚖️ Selisih</span><strong class="badge-selisih">{{ "%.2f"|format(selisih) }} kg</strong></div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width: {{ '%.2f'|format(percent_bibit) }}%"></div></div>
+            </div>
+          </div>
+          {% else %}
+          <div class="empty">Belum ada data kode bibit.</div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="card card-highlight">
+        <div class="card-title">
+          <h2>Dokumen Kegiatan</h2>
+        </div>
+        <div class="grid-cards">
+          {% for row in distribusi_rows %}
+          <div class="grid-card">
+            <div class="grid-card-header">
+              <strong>{{ row.no_pendistribusian }}</strong>
+              <span class="muted">{{ row.komoditas }}</span>
+            </div>
+            <div class="grid-card-body">
+              <div><span>📑 Aktivitas</span><strong>{{ row.total_aktivitas }}</strong></div>
+              <div><span>📦 Total Bibit</span><strong>{{ "%.2f"|format((row.total_bibit or 0) | float) }} kg</strong></div>
+              <div><a class="ghost link" href="{{ url_for('distribution_detail', no_pendistribusian=row.no_pendistribusian) }}">Lihat Detail</a></div>
+            </div>
+          </div>
+          {% else %}
+          <div class="empty">Belum ada distribusi.</div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="card card-highlight">
+        <div class="card-title">
+          <h2>Komoditas Pola Tanam</h2>
+        </div>
+        <div class="grid-cards">
+          {% for row in komoditas_rows %}
+          {% set est = (row.total_estimasi or 0) | float %}
+          {% set real = (row.total_realisasi or 0) | float %}
+          {% set percent = 0 %}
+          {% if est > 0 %}
+            {% set percent = ((real / est) * 100) %}
+            {% if percent > 100 %}{% set percent = 100 %}{% endif %}
+          {% endif %}
+          <div class="grid-card">
+            <div class="grid-card-header">
+              <strong>{{ row.komoditas }}</strong>
+            </div>
+            <div class="grid-card-body">
+              <div><span>🎯 Estimasi</span><strong>{{ "%.2f"|format(est) }} kg</strong></div>
+              <div><span>✅ Realisasi</span><strong>{{ "%.2f"|format(real) }} kg</strong></div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width: {{ '%.2f'|format(percent) }}%"></div></div>
+            </div>
+          </div>
+          {% else %}
+          <div class="empty">Belum ada komoditas.</div>
+          {% endfor %}
+        </div>
+      </article>
+
+    </section>
+  </main>
+  <script>
+    const periodSelect = document.getElementById("period-select");
+    const fields = document.querySelectorAll(".period-field");
+    function togglePeriodFields() {
+      const value = periodSelect.value;
+      fields.forEach((field) => field.style.display = "none");
+      if (value === "week") document.querySelector(".period-week").style.display = "grid";
+      if (value === "month") document.querySelector(".period-month").style.display = "grid";
+      if (value === "year") document.querySelector(".period-year").style.display = "grid";
+    }
+    if (periodSelect) {
+      periodSelect.addEventListener("change", togglePeriodFields);
+      togglePeriodFields();
+    }
+  </script>
+</body>
+</html>

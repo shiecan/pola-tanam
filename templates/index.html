@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Input Pola Tanam</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <h1>Pola Tanam</h1>
+        <p>Sistem lokal untuk input data pola tanam.</p>
+      </div>
+      <nav class="nav">
+        <a class="link" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="link ghost" href="{{ url_for('index') }}">Input Data</a>
+        <a class="link" href="{{ url_for('list_pola') }}">List Petani</a>
+      </nav>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h2>{{ 'Edit Data' if edit_row else 'Input Data Petani Pola Tanam' }}</h2>
+        <form method="post" class="form" action="{{ url_for('update_row', row_id=edit_row.id) if edit_row else url_for('index') }}">
+          <label>
+            Kode Petani
+            <input type="text" name="kode_petani" placeholder="PTN-001" value="{{ edit_row.kode_petani if edit_row else '' }}" required />
+          </label>
+          <label>
+            Nama Petani
+            <input type="text" name="nama_petani" placeholder="Nama petani" value="{{ edit_row.nama_petani if edit_row else '' }}" required />
+          </label>
+          <label>
+            Kelompok Tani
+            <input type="text" name="kelompok_tani" placeholder="Kelompok tani" value="{{ edit_row.kelompok_tani if edit_row else '' }}" />
+          </label>
+          <label>
+            Lokasi (pencarian)
+            <div class="inline">
+              <input type="text" id="lokasi" name="lokasi" placeholder="Desa / Kecamatan" value="{{ edit_row.lokasi if edit_row else '' }}" required />
+              <button type="button" class="ghost" id="cari-alamat">Cari Alamat</button>
+            </div>
+          </label>
+          <label>
+            Alamat Lengkap
+            <textarea id="alamat_lengkap" name="alamat_lengkap" rows="2" placeholder="Alamat lengkap" required>{{ edit_row.alamat_lengkap if edit_row else '' }}</textarea>
+          </label>
+          <label>
+            Nomor Telepon
+            <input type="text" name="telepon" placeholder="08xxxxxxxx" value="{{ edit_row.telepon if edit_row else '' }}" />
+          </label>
+          <label>
+            Komoditas
+            <input type="text" name="komoditas" placeholder="Padi, Jagung, Cabai" value="{{ edit_row.komoditas if edit_row else '' }}" required />
+          </label>
+          <label>
+            Kontrak Panen (bulan)
+            <select name="kontrak_bulan" required>
+              {% for i in range(1, 25) %}
+              <option value="{{ i }}" {% if edit_row and edit_row.kontrak_bulan == i %}selected{% endif %}>{{ i }} bulan</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Target Yield (kg)
+            <input type="number" step="0.01" name="target_yield" placeholder="Misal: 300" value="{{ edit_row.target_yield if edit_row else '' }}" required />
+          </label>
+          <input type="hidden" id="lat" name="lat" value="{{ edit_row.lat if edit_row else '' }}" />
+          <input type="hidden" id="lon" name="lon" value="{{ edit_row.lon if edit_row else '' }}" />
+          <div class="form-actions">
+            <button type="submit">{{ 'Simpan Perubahan' if edit_row else 'Simpan' }}</button>
+            {% if edit_row %}
+            <a class="ghost link" href="{{ url_for('index') }}">Batal</a>
+            {% endif %}
+          </div>
+          <p class="hint" id="lokasi-info"></p>
+          {% if geoapify_key == 'YOUR_GEOAPIFY_KEY' %}
+          <p class="hint warn">Masukkan API key Geoapify pada variabel lingkungan `GEOAPIFY_API_KEY`.</p>
+          {% endif %}
+        </form>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    window.GEOAPIFY_KEY = "{{ geoapify_key }}";
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

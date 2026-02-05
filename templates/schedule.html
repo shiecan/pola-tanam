@@ -1,0 +1,261 @@
+﻿<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jadwal Pola Tanam</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <h1>Jadwal Pola Tanam</h1>
+        <p>Penjadwalan untuk {{ pola.nama_petani }} ({{ pola.komoditas }})</p>
+      </div>
+      <nav class="nav">
+        <a class="link" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="link" href="{{ url_for('index') }}">Input Data</a>
+        <a class="link" href="{{ url_for('list_pola') }}">List Petani</a>
+        <a class="link ghost" href="{{ url_for('list_pola') }}">Kembali</a>
+      </nav>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Ringkasan</h2>
+        <div class="stat-grid">
+          <div class="stat">
+            <span>Target Yield</span>
+            <strong>{{ "%.2f"|format((pola.target_yield or 0) | float) }} kg</strong>
+          </div>
+          <div class="stat">
+            <span>Terjadwal (Panen)</span>
+            <strong>{{ "%.2f"|format((total_estimasi or 0) | float) }} kg</strong>
+          </div>
+          <div class="stat">
+            <span>Sisa Yield</span>
+            <strong>{{ "%.2f"|format((sisa or 0) | float) }} kg</strong>
+          </div>
+          <div class="stat">
+            <span>Total Bibit Diberikan</span>
+            <strong>{{ "%.2f"|format((total_pemberian_bibit or 0) | float) }} kg</strong>
+          </div>
+          <div class="stat">
+            <span>Total Tanam Benih</span>
+            <strong>{{ "%.2f"|format((total_tanam_benih or 0) | float) }} kg</strong>
+          </div>
+          <div class="stat">
+            <span>Sisa Bibit</span>
+            <strong>{{ "%.2f"|format(((total_pemberian_bibit or 0) - (total_tanam_benih or 0)) | float) }} kg</strong>
+          </div>
+        </div>
+        {% set target_val = (pola.target_yield or 0) | float %}
+        {% set progress_val = (total_estimasi or 0) | float %}
+        {% if target_val > 0 %}
+        {% set percent = ((progress_val / target_val) * 100) %}
+        {% else %}
+        {% set percent = 0 %}
+        {% endif %}
+        {% if percent > 100 %}{% set percent = 100 %}{% endif %}
+        <div class="yield-bar">
+          <div class="yield-bar-track">
+            <div class="yield-bar-fill" style="width: {{ "%.2f"|format(percent) }}%"></div>
+          </div>
+          <div class="yield-bar-meta">
+            <span>Progress Yield</span>
+            <strong>{{ "%.2f"|format(percent) }}%</strong>
+          </div>
+        </div>
+        <p class="hint">Lokasi: {{ pola.lokasi }} — {{ pola.alamat_lengkap }}</p>
+      </article>
+
+      <article class="card">
+        <h2>{{ 'Edit Jadwal' if edit_item else 'Tambah Jadwal' }}</h2>
+        <form method="post" class="form" action="{{ url_for('update_schedule', row_id=pola.id, item_id=edit_item.id) if edit_item else url_for('schedule', row_id=pola.id) }}">
+          <label>
+            Tanggal
+            <input type="date" name="tanggal" value="{{ edit_item.tanggal if edit_item else '' }}" required />
+          </label>
+          <label>
+            Jenis Kegiatan
+            <select name="jenis" required>
+              {% set jenis_val = edit_item.jenis if edit_item else 'tanam_benih' %}
+              <option value="tanam_benih" {% if jenis_val == 'tanam_benih' %}selected{% endif %}>Tanam Benih</option>
+              <option value="pemupukan" {% if jenis_val == 'pemupukan' %}selected{% endif %}>Pemupukan</option>
+              <option value="panen" {% if jenis_val == 'panen' %}selected{% endif %}>Panen</option>
+              <option value="lainnya" {% if jenis_val == 'lainnya' %}selected{% endif %}>Lainnya</option>
+            </select>
+          </label>
+          <label>
+            Kegiatan
+            <select name="kegiatan" required>
+              {% set keg_val = edit_item.kegiatan if edit_item else '' %}
+              <option value="Tanam Benih" {% if keg_val == 'Tanam Benih' %}selected{% endif %}>Tanam Benih</option>
+              <option value="Pemupukan 1" {% if keg_val == 'Pemupukan 1' %}selected{% endif %}>Pemupukan 1</option>
+              <option value="Pemupukan 2" {% if keg_val == 'Pemupukan 2' %}selected{% endif %}>Pemupukan 2</option>
+              <option value="Penyiraman" {% if keg_val == 'Penyiraman' %}selected{% endif %}>Penyiraman</option>
+              <option value="Pengendalian Hama" {% if keg_val == 'Pengendalian Hama' %}selected{% endif %}>Pengendalian Hama</option>
+              <option value="Panen" {% if keg_val == 'Panen' %}selected{% endif %}>Panen</option>
+              <option value="Panen Susulan" {% if keg_val == 'Panen Susulan' %}selected{% endif %}>Panen Susulan</option>
+            </select>
+          </label>
+          <label class="field-qty-pemberian">
+            Qty Pemberian Bibit (kg)
+            <input type="number" step="0.01" name="qty_pemberian_bibit" placeholder="0" value="{{ edit_item.qty_pemberian_bibit if edit_item else '' }}" />
+          </label>
+          <label class="field-qty-benih">
+            Qty Benih (kg)
+            <input type="number" step="0.01" name="qty_benih_kg" placeholder="0" value="{{ edit_item.qty_benih_kg if edit_item else '' }}" />
+          </label>
+          <label class="field-kode-bibit">
+            Kode Bibit
+            <input type="text" name="kode_bibit" placeholder="BIBIT-001A" value="{{ edit_item.kode_bibit if edit_item else '' }}" />
+          </label>
+          <label class="field-no-distribusi">
+            No Pendistribusian
+            <input type="text" name="no_pendistribusian" placeholder="DIST-2026-001" value="{{ edit_item.no_pendistribusian if edit_item else '' }}" />
+          </label>
+          <label class="field-estimasi">
+            Estimasi Hasil Panen (kg)
+            <input type="number" step="0.01" name="estimasi_kg" placeholder="0" value="{{ edit_item.estimasi_kg if edit_item else '' }}" />
+          </label>
+          <label class="field-realisasi">
+            Realisasi Panen (kg)
+            <input type="number" step="0.01" name="realisasi_kg" placeholder="0" value="{{ edit_item.realisasi_kg if edit_item else '' }}" />
+          </label>
+          <div class="form-actions">
+            <button type="submit">{{ 'Simpan Perubahan' if edit_item else 'Simpan Jadwal' }}</button>
+            {% if edit_item %}
+            <a class="ghost link" href="{{ url_for('schedule', row_id=pola.id) }}">Batal</a>
+            {% endif %}
+          </div>
+          <p class="hint">Hanya kegiatan dengan jenis <strong>Panen</strong> yang mengurangi sisa yield.</p>
+        </form>
+      </article>
+
+      <article class="card wide">
+        <div class="card-title">
+          <h2>Timeline</h2>
+          <span class="badge">{{ jadwal|length }} aktivitas</span>
+          <div class="actions-col">
+            <button type="button" class="ghost" id="export-image">Export Gambar</button>
+            <button type="button" class="ghost" id="export-pdf">Export PDF</button>
+          </div>
+        </div>
+        <div class="timeline" id="timeline">
+          <div class="timeline-line"></div>
+          {% for item in jadwal %}
+          <div class="timeline-item timeline-{{ item.jenis }}">
+            <div class="dot"></div>
+            <div class="timeline-card">
+              <div class="timeline-header">
+                <strong>{{ item.tanggal }}</strong>
+                <span class="badge badge-{{ item.jenis }}">
+                  <span class="badge-icon badge-icon-{{ item.jenis }}"></span>
+                  {{ item.jenis|replace('_', ' ')|title }}
+                </span>
+              </div>
+              <p>{{ item.kegiatan }}</p>
+              <div class="timeline-metrics">
+                <span>Qty Bibit Diberikan: {{ "%.2f"|format((item.qty_pemberian_bibit or 0) | float) }} kg</span>
+                <span>Qty Benih: {{ "%.2f"|format((item.qty_benih_kg or 0) | float) }} kg</span>
+                <span>Kode Bibit: {{ item.kode_bibit }}</span>
+                <span>No Distribusi: {{ item.no_pendistribusian }}</span>
+                <span>Estimasi Panen: {{ "%.2f"|format((item.estimasi_kg or 0) | float) }} kg</span>
+                <span>Realisasi Panen: {{ "%.2f"|format((item.realisasi_kg or 0) | float) }} kg</span>
+              </div>
+              <div class="actions-col">
+                <a class="ghost link" href="{{ url_for('edit_schedule', row_id=pola.id, item_id=item.id) }}">Edit</a>
+                <form method="post" action="{{ url_for('delete_schedule', row_id=pola.id, item_id=item.id) }}">
+                  <button type="submit" class="ghost">Hapus</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="empty">Belum ada jadwal.</div>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+  </main>
+  <section id="export-area" class="export-area">
+      <div class="export-header">
+        <div>
+          <img class="export-logo" src="{{ url_for('static', filename='logo-ksip.png') }}" alt="Logo" />
+          <h1>Pola Tanam - Timeline</h1>
+          <p>{{ pola.kode_petani }} • {{ pola.nama_petani }} • {{ pola.kelompok_tani or '-' }}</p>
+        </div>
+        <div class="export-meta">
+        <span>Komoditas: {{ pola.komoditas }}</span>
+        <span>Kontrak: {{ pola.kontrak_bulan }} bulan</span>
+        <span>Lokasi: {{ pola.lokasi }}</span>
+      </div>
+    </div>
+    <div class="export-stats">
+      <div>
+        <span>Target Yield</span>
+        <strong>{{ "%.2f"|format((pola.target_yield or 0) | float) }} kg</strong>
+      </div>
+      <div>
+        <span>Terjadwal (Panen)</span>
+        <strong>{{ "%.2f"|format((total_estimasi or 0) | float) }} kg</strong>
+      </div>
+      <div>
+        <span>Sisa Yield</span>
+        <strong>{{ "%.2f"|format((sisa or 0) | float) }} kg</strong>
+      </div>
+      <div>
+        <span>Total Bibit Diberikan</span>
+        <strong>{{ "%.2f"|format((total_pemberian_bibit or 0) | float) }} kg</strong>
+      </div>
+      <div>
+        <span>Total Tanam Benih</span>
+        <strong>{{ "%.2f"|format((total_tanam_benih or 0) | float) }} kg</strong>
+      </div>
+      <div>
+        <span>Sisa Bibit</span>
+        <strong>{{ "%.2f"|format(((total_pemberian_bibit or 0) - (total_tanam_benih or 0)) | float) }} kg</strong>
+      </div>
+    </div>
+    <div class="export-timeline" id="export-timeline">
+      <div class="timeline-line"></div>
+      {% for item in jadwal %}
+      <div class="timeline-item timeline-{{ item.jenis }}">
+        <div class="dot"></div>
+        <div class="timeline-card">
+          <div class="timeline-header">
+            <strong>{{ item.tanggal }}</strong>
+            <span class="badge badge-{{ item.jenis }}">
+              <span class="badge-icon badge-icon-{{ item.jenis }}"></span>
+              {{ item.jenis|replace('_', ' ')|title }}
+            </span>
+          </div>
+          <p>{{ item.kegiatan }}</p>
+          <div class="timeline-metrics">
+            <span>Qty Bibit Diberikan: {{ "%.2f"|format((item.qty_pemberian_bibit or 0) | float) }} kg</span>
+            <span>Qty Benih: {{ "%.2f"|format((item.qty_benih_kg or 0) | float) }} kg</span>
+            <span>Kode Bibit: {{ item.kode_bibit }}</span>
+            <span>No Distribusi: {{ item.no_pendistribusian }}</span>
+            <span>Estimasi Panen: {{ "%.2f"|format((item.estimasi_kg or 0) | float) }} kg</span>
+            <span>Realisasi Panen: {{ "%.2f"|format((item.realisasi_kg or 0) | float) }} kg</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="export-footer">
+      <span>Dicetak dari sistem Pola Tanam Lokal</span>
+      <span>{{ pola.lokasi }} • {{ pola.komoditas }}</span>
+        <div class="signature-box">
+        <div class="signature-label">Penanggung Jawab</div>
+        <div class="signature-line"></div>
+      </div>
+    </div>
+  </section>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

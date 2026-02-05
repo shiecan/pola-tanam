@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detail Distribusi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <h1>Detail Distribusi</h1>
+        <p>No Distribusi: {{ no_pendistribusian }}</p>
+      </div>
+      <nav class="nav">
+        <a class="link" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="link" href="{{ url_for('list_pola') }}">List Petani</a>
+        <a class="link ghost" href="{{ url_for('dashboard') }}">Kembali</a>
+      </nav>
+    </header>
+
+    <section class="card">
+      <div class="table">
+        <div class="row header row-6">
+          <span>Tanggal</span>
+          <span>Petani</span>
+          <span>Komoditas</span>
+          <span>Jenis</span>
+          <span>Qty Bibit (kg)</span>
+          <span>Qty Benih (kg)</span>
+        </div>
+        {% for row in rows %}
+        <div class="row row-6">
+          <span>{{ row.tanggal }}</span>
+          <span><strong>{{ row.kode_petani }}</strong> {{ row.nama_petani }}</span>
+          <span>{{ row.komoditas }}</span>
+          <span>{{ row.jenis|replace('_', ' ')|title }}</span>
+          <span>{{ "%.2f"|format((row.qty_pemberian_bibit or 0) | float) }}</span>
+          <span>{{ "%.2f"|format((row.qty_benih_kg or 0) | float) }}</span>
+        </div>
+        {% else %}
+        <div class="empty">Tidak ada data.</div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>
